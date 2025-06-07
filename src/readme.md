@@ -1,0 +1,1 @@
+se abre con el npm run dev en la terminal
