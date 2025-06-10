@@ -52,6 +52,7 @@
         <v-card-text>
           <v-text-field v-model="form.nombre" label="Nombre" />
           <v-text-field v-model="form.especialidad" label="Especialidad" />
+          <v-text-field v-model="form.registroProfesional" label="Registro Profesional" />
           <v-switch v-model="form.activo" label="Activo" />
 
           <h4>Disponibilidad</h4>
@@ -110,6 +111,7 @@ interface Especialista {
   id: number
   nombre: string
   especialidad: string
+  registroProfesional: string
   activo: boolean
   disponibilidad: Disponibilidad[]
 }
@@ -119,16 +121,17 @@ const especialistas = ref<Especialista[]>([
     id: 1,
     nombre: 'Ana Gómez',
     especialidad: 'Cardiología',
+    registroProfesional: 'RP-001',
     activo: true,
     disponibilidad: [
-      { dia: 'Lunes', horaInicio: '08:00', horaFin: '12:00' },
-      { dia: 'Miércoles', horaInicio: '14:00', horaFin: '18:00' }
+      { dia: 'Lunes', horaInicio: '08:00', horaFin: '12:00' }
     ]
   },
   {
     id: 2,
     nombre: 'Luis Pérez',
     especialidad: 'Neurología',
+    registroProfesional: 'RP-002',
     activo: true,
     disponibilidad: []
   },
@@ -136,6 +139,7 @@ const especialistas = ref<Especialista[]>([
     id: 3,
     nombre: 'María Torres',
     especialidad: 'Dermatología',
+    registroProfesional: 'RP-003',
     activo: false,
     disponibilidad: []
   }
@@ -147,6 +151,7 @@ const sortBy = ref([{ key: 'nombre', order: 'asc' }])
 const headers = [
   { title: 'Nombre', key: 'nombre', sortable: true },
   { title: 'Especialidad', key: 'especialidad', sortable: true },
+  { title: 'Registro Profesional', key: 'registroProfesional', sortable: true },
   { title: 'Disponibilidad', key: 'disponibilidad', sortable: false },
   { title: 'Acciones', key: 'acciones', sortable: false }
 ]
@@ -154,6 +159,7 @@ const headers = [
 const headersInactivos = [
   { title: 'Nombre', key: 'nombre', sortable: true },
   { title: 'Especialidad', key: 'especialidad', sortable: true },
+  { title: 'Registro Profesional', key: 'registroProfesional', sortable: true },
   { title: 'Acciones', key: 'acciones', sortable: false }
 ]
 
@@ -166,6 +172,7 @@ const form = ref<Especialista>({
   id: 0,
   nombre: '',
   especialidad: '',
+  registroProfesional: '',
   activo: true,
   disponibilidad: []
 })
@@ -175,6 +182,7 @@ const resetForm = () => {
     id: 0,
     nombre: '',
     especialidad: '',
+    registroProfesional: '',
     activo: true,
     disponibilidad: []
   }
@@ -248,9 +256,12 @@ const getDisponibilidadError = (index: number): string => {
 }
 
 const isFormValid = computed(() => {
-  return form.value.nombre.trim() !== '' &&
-         form.value.especialidad.trim() !== '' &&
-         form.value.disponibilidad.every((_, i) => getDisponibilidadError(i) === '')
+  return (
+    form.value.nombre.trim() !== '' &&
+    form.value.especialidad.trim() !== '' &&
+    form.value.registroProfesional.trim() !== '' &&
+    form.value.disponibilidad.every((_, i) => getDisponibilidadError(i) === '')
+  )
 })
 </script>
 
