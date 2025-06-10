@@ -1,16 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL + '/especialistas'
-
-interface EspecialistaPayload {
-  nombre: string
-  especialidad: string
-  telefono: string
-  correo: string
-  disponibilidades?: {
-    dia: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado' | 'Domingo'
-    hora_inicio: string
-    hora_fin: string
-  }[]
-}
+const BASE_URL = 'http://localhost:3333/especialistas'
 
 export default {
   async list() {
@@ -33,7 +21,7 @@ export default {
     return await res.json()
   },
 
-  async create(data: EspecialistaPayload) {
+  async create(data: any) {
     const res = await fetch(BASE_URL, {
       method: 'POST',
       headers: {
@@ -46,7 +34,7 @@ export default {
     return await res.json()
   },
 
-  async update(id: number, data: Partial<EspecialistaPayload>) {
+  async update(id: number, data: any) {
     const res = await fetch(`${BASE_URL}/${id}`, {
       method: 'PUT',
       headers: {

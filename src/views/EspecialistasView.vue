@@ -1,166 +1,261 @@
 <template>
-  <v-container class="pa-6" style="max-width: 900px; background: white; border-radius: 12px;">
-    <h2 class="text-h5 font-weight-bold mb-6" style="color: #1565c0;">Especialistas Guardados</h2>
+  <v-container>
+    <!-- Tabla de Especialistas Activos -->
+    <v-card class="mb-4">
+      <v-card-title>
+        Especialistas Activos
+        <v-spacer />
+        <v-btn color="primary" @click="openCreateDialog">Agregar</v-btn>
+      </v-card-title>
+      <v-data-table
+        :headers="headers"
+        :items="activos"
+        :sort-by="sortBy"
+        class="elevation-1"
+      >
+        <template #item.disponibilidad="{ item }">
+          <div v-if="item.disponibilidad.length">
+            <div v-for="(d, i) in item.disponibilidad" :key="i">
+              {{ d.dia }}: {{ d.horaInicio }} - {{ d.horaFin }}
+            </div>
+          </div>
+          <div v-else>No asignada</div>
+        </template>
+        <template #item.acciones="{ item }">
+          <v-btn icon="mdi-pencil" @click="edit(item)" color="primary" />
+          <v-btn icon="mdi-delete" @click="softDelete(item)" color="error" />
+        </template>
+      </v-data-table>
+    </v-card>
 
-    <v-data-table
-      :headers="headers"
-      :items="especialistas"
-      item-value="id"
-      class="elevation-2"
-      dense
-      :items-per-page="5"
-      :loading="loading"
-    >
-      <template #item.activo="{ item }">
-        <v-chip :color="item.activo ? 'green' : 'red'" dark small>
-          {{ item.activo ? 'Activo' : 'Inactivo' }}
-        </v-chip>
-      </template>
+    <!-- Tabla de Inactivos -->
+    <v-card class="mb-4">
+      <v-card-title>Especialistas Inactivos</v-card-title>
+      <v-data-table
+        :headers="headersInactivos"
+        :items="inactivos"
+        class="elevation-1"
+      >
+        <template #item.acciones="{ item }">
+          <v-btn icon="mdi-backup-restore" @click="restore(item)" color="success" />
+          <v-btn icon="mdi-delete-forever" @click="permanentDelete(item)" color="error" />
+        </template>
+      </v-data-table>
+    </v-card>
 
-      <template #item.disponibilidades="{ item }">
-        <div v-if="item.disponibilidades.length === 0">Sin disponibilidades</div>
-        <v-list dense two-line>
-          <v-list-item v-for="(disp, i) in item.disponibilidades" :key="i" class="pa-0">
-            <v-list-item-content>
-              <v-list-item-title>
-                {{ disp.dia }}
-              </v-list-item-title>
-              <v-list-item-subtitle>
-                {{ disp.hora_inicio }} - {{ disp.hora_fin }}
-              </v-list-item-subtitle>
-            </v-list-item-content>
-            <v-list-item-action>
-              <v-btn @click="eliminarDisponibilidad(item, i)" icon>
-                <v-icon>mdi-delete</v-icon>
-              </v-btn>
-            </v-list-item-action>
-          </v-list-item>
-        </v-list>
+    <!-- Diálogo -->
+    <v-dialog v-model="dialog" max-width="600px">
+      <v-card>
+        <v-card-title>
+          {{ isEditing ? 'Editar Especialista' : 'Agregar Especialista' }}
+        </v-card-title>
+        <v-card-text>
+          <v-text-field v-model="form.nombre" label="Nombre" />
+          <v-text-field v-model="form.especialidad" label="Especialidad" />
+          <v-switch v-model="form.activo" label="Activo" />
 
-        <!-- Formulario para agregar disponibilidad -->
-        <v-form v-if="formVisible[item.id]" @submit.prevent="agregarDisponibilidad(item, item.id)">
-          <v-select
-            v-model="newDisponibilidad.dia"
-            :items="diasDisponibles"
-            label="Selecciona un día"
-            required
-          ></v-select>
-          <v-time-picker
-            v-model="newDisponibilidad.hora_inicio"
-            label="Hora de inicio"
-            required
-          ></v-time-picker>
-          <v-time-picker
-            v-model="newDisponibilidad.hora_fin"
-            label="Hora de fin"
-            required
-          ></v-time-picker>
-          <v-btn type="submit" color="primary">Agregar Disponibilidad</v-btn>
-        </v-form>
-
-        <!-- Botón para mostrar el formulario -->
-        <v-btn @click="toggleForm(item.id)" color="secondary" small>
-          {{ formVisible[item.id] ? 'Cancelar' : 'Agregar Disponibilidad' }}
-        </v-btn>
-      </template>
-
-      <template #item.guardar="{ item }">
-        <v-btn @click="guardarEspecialista(item)" color="success" small>
-          Guardar Cambios
-        </v-btn>
-      </template>
-    </v-data-table>
+          <h4>Disponibilidad</h4>
+          <div v-for="(d, i) in form.disponibilidad" :key="i" class="d-flex mb-2 align-center">
+            <v-select
+              v-model="d.dia"
+              :items="dias"
+              label="Día"
+              class="mr-2"
+              style="max-width: 120px"
+              :error="!!getDisponibilidadError(i)"
+              :error-messages="getDisponibilidadError(i)"
+            />
+            <v-text-field
+              v-model="d.horaInicio"
+              label="Inicio"
+              type="time"
+              class="mr-2"
+              style="max-width: 120px"
+              :error="!!getDisponibilidadError(i)"
+            />
+            <v-text-field
+              v-model="d.horaFin"
+              label="Fin"
+              type="time"
+              class="mr-2"
+              style="max-width: 120px"
+              :error="!!getDisponibilidadError(i)"
+            />
+            <v-btn icon @click="removeDisponibilidad(i)" color="error">
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </div>
+          <v-btn color="secondary" @click="addDisponibilidad">Agregar disponibilidad</v-btn>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" :disabled="!isFormValid" @click="save">Guardar</v-btn>
+          <v-btn @click="closeDialog">Cancelar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-const loading = ref(false)
+interface Disponibilidad {
+  dia: string
+  horaInicio: string
+  horaFin: string
+}
 
-const headers = [
-  { title: 'Nombre Completo', key: 'nombre_completo', align: 'start', sortable: true },
-  { title: 'Especialidad', key: 'especialidad', sortable: true },
-  { title: 'Registro Profesional', key: 'registro_profesional' },
-  { title: 'Activo', key: 'activo' },
-  { title: 'Disponibilidades', key: 'disponibilidades' },
-  { title: 'Acción', key: 'guardar' },
-]
+interface Especialista {
+  id: number
+  nombre: string
+  especialidad: string
+  activo: boolean
+  disponibilidad: Disponibilidad[]
+}
 
-const diasDisponibles = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-
-const especialistas = ref([
+const especialistas = ref<Especialista[]>([
   {
     id: 1,
-    nombre_completo: 'Juan Pérez',
+    nombre: 'Ana Gómez',
     especialidad: 'Cardiología',
-    registro_profesional: '12345',
     activo: true,
-    disponibilidades: [
-      { dia: 'Lunes', hora_inicio: '08:00', hora_fin: '12:00' },
-      { dia: 'Miércoles', hora_inicio: '14:00', hora_fin: '18:00' },
-    ],
+    disponibilidad: [
+      { dia: 'Lunes', horaInicio: '08:00', horaFin: '12:00' },
+      { dia: 'Miércoles', horaInicio: '14:00', horaFin: '18:00' }
+    ]
   },
   {
     id: 2,
-    nombre_completo: 'Ana Gómez',
+    nombre: 'Luis Pérez',
     especialidad: 'Neurología',
-    registro_profesional: '67890',
-    activo: false,
-    disponibilidades: [
-      { dia: 'Martes', hora_inicio: '09:00', hora_fin: '13:00' },
-    ],
+    activo: true,
+    disponibilidad: []
   },
+  {
+    id: 3,
+    nombre: 'María Torres',
+    especialidad: 'Dermatología',
+    activo: false,
+    disponibilidad: []
+  }
 ])
 
-const formVisible = ref<{ [key: number]: boolean }>({}) // Controlar la visibilidad del formulario para cada especialista
-const newDisponibilidad = ref({
-  dia: '',
-  hora_inicio: '',
-  hora_fin: ''
+const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+const sortBy = ref([{ key: 'nombre', order: 'asc' }])
+
+const headers = [
+  { title: 'Nombre', key: 'nombre', sortable: true },
+  { title: 'Especialidad', key: 'especialidad', sortable: true },
+  { title: 'Disponibilidad', key: 'disponibilidad', sortable: false },
+  { title: 'Acciones', key: 'acciones', sortable: false }
+]
+
+const headersInactivos = [
+  { title: 'Nombre', key: 'nombre', sortable: true },
+  { title: 'Especialidad', key: 'especialidad', sortable: true },
+  { title: 'Acciones', key: 'acciones', sortable: false }
+]
+
+const activos = computed(() => especialistas.value.filter(e => e.activo))
+const inactivos = computed(() => especialistas.value.filter(e => !e.activo))
+
+const dialog = ref(false)
+const isEditing = ref(false)
+const form = ref<Especialista>({
+  id: 0,
+  nombre: '',
+  especialidad: '',
+  activo: true,
+  disponibilidad: []
 })
 
-// Función para agregar una nueva disponibilidad
-const agregarDisponibilidad = (especialista: any, id: number) => {
-  if (!newDisponibilidad.value.dia || !newDisponibilidad.value.hora_inicio || !newDisponibilidad.value.hora_fin) {
-    alert('Por favor, completa todos los campos.')
-    return
+const resetForm = () => {
+  form.value = {
+    id: 0,
+    nombre: '',
+    especialidad: '',
+    activo: true,
+    disponibilidad: []
   }
-
-  especialista.disponibilidades.push({
-    dia: newDisponibilidad.value.dia,
-    hora_inicio: newDisponibilidad.value.hora_inicio,
-    hora_fin: newDisponibilidad.value.hora_fin
-  })
-
-  // Limpiar el formulario
-  newDisponibilidad.value = { dia: '', hora_inicio: '', hora_fin: '' }
-  formVisible.value[id] = false // Ocultar el formulario después de agregar
 }
 
-// Función para eliminar una disponibilidad
-const eliminarDisponibilidad = (especialista: any, index: number) => {
-  especialista.disponibilidades.splice(index, 1)
+const openCreateDialog = () => {
+  resetForm()
+  isEditing.value = false
+  dialog.value = true
 }
 
-// Función para guardar los cambios de un especialista (simulada)
-const guardarEspecialista = async (especialista: any) => {
-  loading.value = true
-  // Aquí se simula el proceso de guardar el especialista, por ejemplo, haciendo una petición HTTP
-  console.log('Guardando especialista', especialista)
-  // Simulación de llamada API para guardar cambios
-  setTimeout(() => {
-    loading.value = false
-    alert('Cambios guardados con éxito!')
-  }, 1000)
+const edit = (item: Especialista) => {
+  form.value = {
+    ...item,
+    disponibilidad: JSON.parse(JSON.stringify(item.disponibilidad)) // deep copy
+  }
+  isEditing.value = true
+  dialog.value = true
 }
 
-// Función para alternar la visibilidad del formulario
-const toggleForm = (id: number) => {
-  formVisible.value[id] = !formVisible.value[id]
+const save = () => {
+  if (!isFormValid.value) return
+  if (isEditing.value) {
+    const index = especialistas.value.findIndex(e => e.id === form.value.id)
+    if (index !== -1) {
+      especialistas.value[index] = { ...form.value }
+    }
+  } else {
+    form.value.id = Date.now()
+    especialistas.value.push({ ...form.value })
+  }
+  closeDialog()
 }
+
+const closeDialog = () => {
+  dialog.value = false
+  resetForm()
+}
+
+const softDelete = (item: Especialista) => {
+  const index = especialistas.value.findIndex(e => e.id === item.id)
+  if (index !== -1) {
+    especialistas.value[index].activo = false
+  }
+}
+
+const restore = (item: Especialista) => {
+  const index = especialistas.value.findIndex(e => e.id === item.id)
+  if (index !== -1) {
+    especialistas.value[index].activo = true
+  }
+}
+
+const permanentDelete = (item: Especialista) => {
+  especialistas.value = especialistas.value.filter(e => e.id !== item.id)
+}
+
+const addDisponibilidad = () => {
+  form.value.disponibilidad.push({ dia: '', horaInicio: '', horaFin: '' })
+}
+
+const removeDisponibilidad = (index: number) => {
+  form.value.disponibilidad.splice(index, 1)
+}
+
+const getDisponibilidadError = (index: number): string => {
+  const d = form.value.disponibilidad[index]
+  if (!d.dia || !d.horaInicio || !d.horaFin) return 'Completa todos los campos'
+  if (d.horaInicio >= d.horaFin) return 'Hora fin debe ser mayor que hora inicio'
+  return ''
+}
+
+const isFormValid = computed(() => {
+  return form.value.nombre.trim() !== '' &&
+         form.value.especialidad.trim() !== '' &&
+         form.value.disponibilidad.every((_, i) => getDisponibilidadError(i) === '')
+})
 </script>
 
 <style scoped>
-/* Puedes personalizar más estilos si es necesario */
+.v-data-table {
+  margin-bottom: 20px;
+}
 </style>

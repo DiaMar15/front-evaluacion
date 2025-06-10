@@ -1,11 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL + '/disponibilidades'
-
-interface DisponibilidadPayload {
-  especialista_id: number
-  dia: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado' | 'Domingo'
-  hora_inicio: string // formato: 'HH:mm'
-  hora_fin: string // formato: 'HH:mm'
-}
+const BASE_URL = 'http://localhost:3333/disponibilidades'
 
 export default {
   async list() {
@@ -28,7 +21,7 @@ export default {
     return await res.json()
   },
 
-  async create(data: DisponibilidadPayload) {
+  async create(data: any) {
     const res = await fetch(BASE_URL, {
       method: 'POST',
       headers: {
@@ -44,7 +37,7 @@ export default {
     return await res.json()
   },
 
-  async update(id: number, data: Partial<DisponibilidadPayload>) {
+  async update(id: number, data: any) {
     const res = await fetch(`${BASE_URL}/${id}`, {
       method: 'PUT',
       headers: {

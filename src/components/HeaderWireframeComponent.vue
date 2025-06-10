@@ -21,7 +21,6 @@
 <script setup lang="ts">
 import { authSetStore } from '@/stores/AuthStore';
 import { useRouter } from 'vue-router'
-import LogoComponent from '@/components/LogoComponent.vue'
 import TopFooterComponent from '@/components/TopFooterComponent.vue'
 
 const authStore = authSetStore();
