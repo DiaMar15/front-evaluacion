@@ -1,10 +1,11 @@
 <template>
-  <v-navigation-drawer
-    expand-on-hover
-    rail
-    app
-    color="deep-purple"
-  >
+<v-navigation-drawer
+  expand-on-hover
+  rail
+  app
+  color="green lighten-1"
+>
+
 
     <v-list density="compact" nav>
       <v-list-item

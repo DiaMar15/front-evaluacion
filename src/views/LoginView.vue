@@ -16,7 +16,7 @@ const handlerLogin = () => {
       password: password.value,
     })
   }
-} 
+}
 </script>
 
 <template>
@@ -70,7 +70,7 @@ input {
 }
 
 button {
-  background: #bb71e8;
+  background: #00a028;
   color: white;
   padding: 15px;
   border: none;
@@ -86,6 +86,6 @@ p {
 }
 
 button:hover {
-  background-color: #a24edf;
+  background-color: #003cff;
 }
 </style>

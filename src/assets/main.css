@@ -2,7 +2,7 @@
 
 #app {
   height: 100vh;
-  background: linear-gradient(to right, #01979c, #a272c7);
+  background-color: #adacac; /* Gris plano, sin degradado */
   margin: 0 auto;
   font-weight: normal;
 }

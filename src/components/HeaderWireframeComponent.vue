@@ -2,11 +2,9 @@
   <v-app-bar
     app
     flat
-    color="deep-purple"
+   color="green lighten-1"
     density="default"
   >  <!-- el density da el tamaño de header (prominent > default> comfortable > compact)-->
-
-    <LogoComponent class="logo mr-4" />
 
     <TopFooterComponent class="d-none d-md-flex" />
 
@@ -33,12 +31,6 @@ const logout = () => {
 </script>
 
 <style scoped>
-  .logo {
-    height: 3.1rem;
-    width: auto;
-    margin-left: 1rem;
-  }
-
   .logout-button {
     margin-right: 1rem;
   }

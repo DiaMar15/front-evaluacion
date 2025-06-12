@@ -1,21 +1,22 @@
 <template>
   <v-container>
-    <!-- Especialistas activos -->
+    <!-- Especialistas Activos -->
     <v-card class="mb-4">
       <v-card-title>
-        Especialistas Activos
+        <span class="text-h6">Especialistas Activos</span>
         <v-spacer />
         <v-btn color="primary" @click="openCreateDialog">Agregar</v-btn>
       </v-card-title>
       <v-data-table
         :headers="headers"
         :items="activos"
-        :sort-by="sortBy"
         class="elevation-1"
+        item-value="id"
+        no-data-text="No hay especialistas activos"
       >
-        <template #item.disponibilidad="{ item }">
-          <div v-if="item.disponibilidad.length">
-            <div v-for="(h, i) in item.disponibilidad" :key="i">
+        <template #item.disponibilidades="{ item }">
+          <div v-if="item.disponibilidades?.length">
+            <div v-for="(h, i) in item.disponibilidades" :key="i">
               {{ h.dia }}: {{ h.horaInicio }} - {{ h.horaFin }}
             </div>
           </div>
@@ -30,13 +31,17 @@
       </v-data-table>
     </v-card>
 
-    <!-- Especialistas inactivos -->
+    <!-- Especialistas Inactivos -->
     <v-card class="mb-4">
-      <v-card-title>Especialistas Inactivos</v-card-title>
+      <v-card-title>
+        <span class="text-h6">Especialistas Inactivos</span>
+      </v-card-title>
       <v-data-table
         :headers="headersInactivos"
         :items="inactivos"
         class="elevation-1"
+        item-value="id"
+        no-data-text="No hay especialistas inactivos"
       >
         <template #item.acciones="{ item }">
           <v-btn icon="mdi-backup-restore" @click="restore(item)" color="success" />
@@ -45,20 +50,26 @@
       </v-data-table>
     </v-card>
 
-    <!-- Formulario -->
+    <!-- Diálogo Formulario -->
     <v-dialog v-model="dialog" max-width="600px">
       <v-card>
         <v-card-title>
-          {{ isEditing ? 'Editar Especialista' : 'Agregar Especialista' }}
+          <span class="text-h6">
+            {{ isEditing ? 'Editar Especialista' : 'Agregar Especialista' }}
+          </span>
         </v-card-title>
         <v-card-text>
-          <v-text-field v-model="form.nombre" label="Nombre" />
+          <v-text-field v-model="form.nombreCompleto" label="Nombre" />
           <v-text-field v-model="form.especialidad" label="Especialidad" />
           <v-text-field v-model="form.registroProfesional" label="Registro Profesional" />
           <v-switch v-model="form.activo" label="Activo" />
 
           <h4 class="mt-4 mb-2">Disponibilidad</h4>
-          <div v-for="(item, index) in form.disponibilidad" :key="index" class="d-flex align-center mb-2">
+          <div
+            v-for="(item, index) in form.disponibilidades"
+            :key="index"
+            class="d-flex align-center mb-2"
+          >
             <v-select
               v-model="item.dia"
               :items="diasSemana"
@@ -82,12 +93,9 @@
             />
             <v-btn icon="mdi-delete" color="error" @click="removeHorario(index)" />
           </div>
-          <v-btn
-            class="mt-2"
-            color="secondary"
-            @click="addHorario"
-            prepend-icon="mdi-plus"
-          >Agregar Horario</v-btn>
+          <v-btn class="mt-2" color="secondary" @click="addHorario" prepend-icon="mdi-plus">
+            Agregar Horario
+          </v-btn>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -97,6 +105,7 @@
       </v-card>
     </v-dialog>
 
+    <!-- Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
@@ -104,199 +113,165 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-
-type Horario = {
-  dia: string
-  horaInicio: string
-  horaFin: string
-}
-
-type Especialista = {
-  id: number
-  nombre: string
-  especialidad: string
-  registroProfesional: string
-  disponibilidad: Horario[]
-  activo: boolean
-}
-
-const especialistas = ref<Especialista[]>([
-  {
-    id: 1,
-    nombre: 'Ana Gómez',
-    especialidad: 'Cardiología',
-    registroProfesional: 'RG-1234',
-    disponibilidad: [
-      { dia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' },
-      { dia: 'Lunes', horaInicio: '10:00', horaFin: '12:00' }
-    ],
-    activo: true
-  },
-  {
-    id: 2,
-    nombre: 'Luis Pérez',
-    especialidad: 'Neurología',
-    registroProfesional: 'RG-5678',
-    disponibilidad: [],
-    activo: true
-  },
-  {
-    id: 3,
-    nombre: 'María Torres',
-    especialidad: 'Dermatología',
-    registroProfesional: 'RG-9999',
-    disponibilidad: [],
-    activo: false
-  }
-])
-
-const sortBy = ref([{ key: 'nombre', order: 'asc' }])
-
-const headers = [
-  { title: 'Nombre', key: 'nombre', sortable: true },
-  { title: 'Especialidad', key: 'especialidad', sortable: true },
-  { title: 'Registro Profesional', key: 'registroProfesional', sortable: false },
-  { title: 'Disponibilidad', key: 'disponibilidad', sortable: false },
-  { title: 'Acciones', key: 'acciones', sortable: false }
-]
-
-const headersInactivos = [...headers]
-
-const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-
-const activos = computed(() => especialistas.value.filter(e => e.activo))
-const inactivos = computed(() => especialistas.value.filter(e => !e.activo))
+import { ref, onMounted } from 'vue'
+import EspecialistaService from '@/services/EspecialistaService'
 
 const dialog = ref(false)
 const isEditing = ref(false)
-
-const form = ref<Especialista>({
-  id: 0,
-  nombre: '',
+const form = ref({
+  nombreCompleto: '',
   especialidad: '',
   registroProfesional: '',
-  disponibilidad: [],
-  activo: true
+  activo: true,
+  disponibilidades: []
 })
 
-const snackbar = ref({
-  show: false,
-  text: '',
-  color: 'success'
-})
+const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'sabado', 'Domingo']
 
-function showSnackbar(text: string, color: string = 'success') {
-  snackbar.value.text = text
-  snackbar.value.color = color
-  snackbar.value.show = true
-}
+const activos = ref([])
+const inactivos = ref([])
 
-function resetForm() {
-  form.value = {
-    id: 0,
-    nombre: '',
-    especialidad: '',
-    registroProfesional: '',
-    disponibilidad: [],
-    activo: true
-  }
-}
+const snackbar = ref({ show: false, text: '', color: '' })
+
+const headers = [
+  { title: 'Nombre', key: 'nombreCompleto' },
+  { title: 'Especialidad', key: 'especialidad' },
+  { title: 'Registro', key: 'registroProfesional' },
+  { title: 'Disponibilidad', key: 'disponibilidades' },
+  { title: 'Acciones', key: 'acciones', sortable: false },
+]
+
+const headersInactivos = [
+  { title: 'Nombre', key: 'nombreCompleto' },
+  { title: 'Especialidad', key: 'especialidad' },
+  { title: 'Registro', key: 'registroProfesional' },
+  { title: 'Acciones', key: 'acciones', sortable: false },
+]
 
 function openCreateDialog() {
   resetForm()
-  isEditing.value = false
-  dialog.value = true
-}
-
-function edit(item: Especialista) {
-  form.value = JSON.parse(JSON.stringify(item))
-  isEditing.value = true
   dialog.value = true
 }
 
 function closeDialog() {
   dialog.value = false
-  resetForm()
 }
 
-function softDelete(item: Especialista) {
-  const index = especialistas.value.findIndex(e => e.id === item.id)
-  if (index !== -1) {
-    especialistas.value[index].activo = false
-    showSnackbar('Eliminado con éxito', 'info')
+function resetForm() {
+  form.value = {
+    nombreCompleto: '',
+    especialidad: '',
+    registroProfesional: '',
+    activo: true,
+    disponibilidades: []
   }
-}
-
-function restore(item: Especialista) {
-  const index = especialistas.value.findIndex(e => e.id === item.id)
-  if (index !== -1) {
-    especialistas.value[index].activo = true
-    showSnackbar('Restaurado con éxito', 'success')
-  }
-}
-
-function permanentDelete(item: Especialista) {
-  especialistas.value = especialistas.value.filter(e => e.id !== item.id)
-  showSnackbar('Eliminado definitivamente', 'error')
+  isEditing.value = false
 }
 
 function addHorario() {
-  form.value.disponibilidad.push({
-    dia: '',
-    horaInicio: '',
-    horaFin: ''
-  })
+  form.value.disponibilidades.push({ dia: '', horaInicio: '', horaFin: '' })
 }
 
-function removeHorario(index: number) {
-  form.value.disponibilidad.splice(index, 1)
+function removeHorario(index) {
+  form.value.disponibilidades.splice(index, 1)
 }
 
-function horariosTraslapados(horarios: Horario[]): boolean {
-  const porDia: Record<string, Horario[]> = {}
-
-  for (const h of horarios) {
-    if (!porDia[h.dia]) porDia[h.dia] = []
-    porDia[h.dia].push(h)
+async function save() {
+  // Validar horarios inválidos individuales
+  for (const { dia, horaInicio, horaFin } of form.value.disponibilidades) {
+    if (!horaInicio || !horaFin) continue // Saltar si está incompleto
+    if (horaFin <= horaInicio) {
+      snackbar.value = {
+        show: true,
+        text: `Horario inválido en ${dia}: "${horaInicio} - ${horaFin}". La hora final debe ser mayor a la inicial.`,
+        color: 'error'
+      }
+      return
+    }
   }
 
-  for (const dia in porDia) {
-    const ordenados = porDia[dia].slice().sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
-    for (let i = 0; i < ordenados.length - 1; i++) {
-      if (ordenados[i + 1].horaInicio < ordenados[i].horaFin) {
-        return true
+  // Validar traslapes internos
+  const porDia = new Map<string, { inicio: string; fin: string }[]>()
+
+  for (const d of form.value.disponibilidades) {
+    if (!porDia.has(d.dia)) {
+      porDia.set(d.dia, [])
+    }
+    porDia.get(d.dia)!.push({ inicio: d.horaInicio, fin: d.horaFin })
+  }
+
+  for (const [dia, rangos] of porDia.entries()) {
+    rangos.sort((a, b) => a.inicio.localeCompare(b.inicio))
+
+    for (let i = 0; i < rangos.length - 1; i++) {
+      const actual = rangos[i]
+      const siguiente = rangos[i + 1]
+
+      if (actual.fin > siguiente.inicio) {
+        snackbar.value = {
+          show: true,
+          text: `Traslape detectado en ${dia}: ${actual.inicio}-${actual.fin} con ${siguiente.inicio}-${siguiente.fin}`,
+          color: 'error',
+        }
+        return
       }
     }
   }
 
-  return false
-}
-
-function save() {
-  if (horariosTraslapados(form.value.disponibilidad)) {
-    showSnackbar('Hay traslapes en los horarios. Revise disponibilidad.', 'error')
-    return
-  }
-
-  if (isEditing.value) {
-    const index = especialistas.value.findIndex(e => e.id === form.value.id)
-    if (index !== -1) {
-      especialistas.value[index] = JSON.parse(JSON.stringify(form.value))
-      showSnackbar('Actualizado con éxito')
+  try {
+    const payload = {
+      nombre_completo: form.value.nombreCompleto,
+      especialidad: form.value.especialidad,
+      registro_profesional: form.value.registroProfesional,
+      activo: form.value.activo,
+      disponibilidades: form.value.disponibilidades.map(d => ({
+        dia: d.dia,
+        hora_inicio: d.horaInicio,
+        hora_fin: d.horaFin,
+      }))
     }
-  } else {
-    form.value.id = Date.now()
-    especialistas.value.push(JSON.parse(JSON.stringify(form.value)))
-    showSnackbar('Agregado con éxito')
+
+    if (isEditing.value) {
+      await EspecialistaService.actualizarEspecialista(form.value.id, payload)
+      snackbar.value = { show: true, text: 'Especialista actualizado', color: 'success' }
+    } else {
+      await EspecialistaService.crearEspecialista(payload)
+      snackbar.value = { show: true, text: 'Especialista creado', color: 'success' }
+    }
+
+    cargarEspecialistas()
+    dialog.value = false
+  } catch (e) {
+    snackbar.value = { show: true, text: 'Error al guardar', color: 'error' }
+    console.error(e)
   }
-
-  closeDialog()
 }
+
+
+
+function edit(item) {
+  form.value = JSON.parse(JSON.stringify(item))
+  isEditing.value = true
+  dialog.value = true
+}
+
+function softDelete(item) {
+  EspecialistaService.actualizarEspecialista(item.id, { activo: false }).then(cargarEspecialistas)
+}
+
+function restore(item) {
+  EspecialistaService.actualizarEspecialista(item.id, { activo: true }).then(cargarEspecialistas)
+}
+
+function permanentDelete(item) {
+  EspecialistaService.eliminarEspecialistaPermanentemente(item.id).then(cargarEspecialistas)
+}
+
+async function cargarEspecialistas() {
+  const data = await EspecialistaService.obtenerEspecialistas()
+  activos.value = data.filter(e => e.activo)
+  inactivos.value = data.filter(e => !e.activo)
+}
+
+onMounted(cargarEspecialistas)
 </script>
-
-<style scoped>
-.v-data-table {
-  margin-bottom: 20px;
-}
-</style>

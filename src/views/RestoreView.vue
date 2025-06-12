@@ -42,7 +42,7 @@ input {
 }
 
 button {
-  background: #bb71e8;
+  background: #00a028;
   color: white;
   padding: 15px;
   border: none;
